@@ -1,0 +1,217 @@
+{%- comment -%}
+  Casa.MNL – Hero Slider Section with Theme Padding + Color Scheme
+{%- endcomment -%}
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: calc({{ section.settings.padding_top }}px * 0.75);
+    padding-bottom: calc({{ section.settings.padding_bottom }}px * 0.75);
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+
+  /* Hero Slider Styles */
+  #hero-slider-{{ section.id }} { position: relative; overflow: hidden; width: 100%; }
+  #hero-slider-{{ section.id }} .hero-slider__track { position: relative; width: 100%; height: 100vh; min-height: 480px; }
+  #hero-slider-{{ section.id }} .hero-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 600ms ease; }
+  #hero-slider-{{ section.id }} .hero-slide.is-active { opacity: 1; position: relative; }
+
+  /* Maintain full width & auto height on mobile */
+  #hero-slider-{{ section.id }} .hero-slide__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  #hero-slider-{{ section.id }} .hero-slide__content {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #fff;
+    padding: 1rem;
+    width: 90%;
+    max-width: 800px;
+  }
+
+  #hero-slider-{{ section.id }} .hero-slide__heading { 
+    font-size: clamp(1.5rem, 5vw, 2.75rem); 
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+
+  #hero-slider-{{ section.id }} .hero-slide__subtext { 
+    font-size: clamp(1rem, 3vw, 1.125rem);
+    margin-bottom: 1rem;
+  }
+
+  #hero-slider-{{ section.id }} .hero-slide__button { 
+    display: inline-block;
+    padding: .6rem 1.2rem;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+  }
+
+  /* Controls and Dots */
+  #hero-slider-{{ section.id }} .hero-slider__controls {
+    position: absolute; bottom: 1.25rem; right: 1rem; display: flex; gap: .5rem; z-index: 5;
+  }
+
+  #hero-slider-{{ section.id }} .hero-slider__prev,
+  #hero-slider-{{ section.id }} .hero-slider__next {
+    background: rgba(0,0,0,0.45); color: #fff; border: none;
+    border-radius: 50%; width: 36px; height: 36px; cursor: pointer;
+  }
+
+  #hero-slider-{{ section.id }} .hero-slider__dots {
+    position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    display: flex; gap: .5rem; z-index: 5;
+  }
+
+  #hero-slider-{{ section.id }} .hero-slider__dot {
+    width: 10px; height: 10px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,0.5); cursor: pointer;
+  }
+
+  #hero-slider-{{ section.id }} .hero-slider__dot.is-active { background: white; }
+
+  /* ✅ Mobile Adjustments */
+  @media (max-width: 749px) {
+    #hero-slider-{{ section.id }} .hero-slider__track { height: 65vh; min-height: 320px; }
+    #hero-slider-{{ section.id }} .hero-slide__content { padding: .5rem; }
+    #hero-slider-{{ section.id }} .hero-slide__heading { font-size: clamp(1.25rem, 6vw, 2rem); }
+  }
+{%- endstyle -%}
+
+
+<div class="color-{{ section.settings.color_scheme }} gradient section-{{ section.id }}-padding">
+  <section id="hero-slider-{{ section.id }}" class="hero-slider" role="region" aria-label="{{ section.settings.accessible_label }}">
+    {% if section.blocks.size > 0 %}
+      <div class="hero-slider__track">
+        {% for block in section.blocks %}
+          <div class="hero-slide{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.index0 }}">
+            {% if block.settings.image %}
+              <img src="{{ block.settings.image | img_url: '2048x' }}" alt="{{ block.settings.heading | escape }}" loading="lazy" class="hero-slide__image">
+            {% endif %}
+            <div class="hero-slide__content">
+              {% if block.settings.heading %}
+                <h2 class="hero-slide__heading">{{ block.settings.heading }}</h2>
+              {% endif %}
+              {% if block.settings.subtext %}
+                <p class="hero-slide__subtext">{{ block.settings.subtext }}</p>
+              {% endif %}
+              {% if block.settings.button_label and block.settings.button_link %}
+                <a class="hero-slide__button" href="{{ block.settings.button_link }}">{{ block.settings.button_label }}</a>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if section.blocks.size > 1 %}
+        <div class="hero-slider__controls">
+          <button class="hero-slider__prev" aria-label="Previous slide">&larr;</button>
+          <button class="hero-slider__next" aria-label="Next slide">&rarr;</button>
+        </div>
+        <div class="hero-slider__dots" aria-hidden="false">
+          {% for block in section.blocks %}
+            <button class="hero-slider__dot{% if forloop.first %} is-active{% endif %}" data-dot="{{ forloop.index0 }}" aria-label="Go to slide {{ forloop.index }}"></button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="hero-slider__empty">Add slides in the theme editor.</div>
+    {% endif %}
+  </section>
+</div>
+
+<script>
+  (function() {
+    var root = document.getElementById('hero-slider-{{ section.id }}');
+    if (!root) return;
+    var slides = root.querySelectorAll('.hero-slide');
+    if (!slides.length) return;
+
+    var current = 0;
+    var interval = {{ section.settings.autoplay_interval | default: 5000 }};
+    var dots = root.querySelectorAll('.hero-slider__dot');
+    var prevBtn = root.querySelector('.hero-slider__prev');
+    var nextBtn = root.querySelector('.hero-slider__next');
+    var timer;
+
+    function goTo(i) {
+      i = (i + slides.length) % slides.length;
+      slides.forEach((s, idx) => s.classList.toggle('is-active', idx === i));
+      dots.forEach((d, idx) => d.classList.toggle('is-active', idx === i));
+      current = i;
+    }
+
+    function startTimer() {
+      if (interval <= 0 || slides.length <= 1) return;
+      timer = setInterval(() => goTo(current + 1), interval);
+    }
+
+    function resetTimer() {
+      if (timer) clearInterval(timer);
+      startTimer();
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', () => { goTo(current - 1); resetTimer(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { goTo(current + 1); resetTimer(); });
+    dots.forEach(d => d.addEventListener('click', e => { goTo(+e.currentTarget.dataset.dot); resetTimer(); }));
+
+    root.addEventListener('mouseenter', () => timer && clearInterval(timer));
+    root.addEventListener('mouseleave', resetTimer);
+
+    startTimer();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Custom Hero Slider",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    { "type": "text", "id": "accessible_label", "label": "Accessible label", "default": "Homepage hero slider" },
+    { "type": "number", "id": "autoplay_interval", "label": "Autoplay interval (ms, 0 = disable)", "default": 5000 },
+    { "type": "select", "id": "color_scheme", "label": "Color scheme",
+      "options": [
+        { "value": "accent-1", "label": "Accent 1" },
+        { "value": "accent-2", "label": "Accent 2" },
+        { "value": "background-1", "label": "Background 1" },
+        { "value": "background-2", "label": "Background 2" },
+        { "value": "inverse", "label": "Inverse" }
+      ],
+      "default": "background-1"
+    },
+    { "type": "header", "content": "Section padding" },
+    { "type": "range", "id": "padding_top", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Padding top", "default": 40 },
+    { "type": "range", "id": "padding_bottom", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Padding bottom", "default": 52 }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "Slide",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Slide image" },
+        { "type": "text", "id": "heading", "label": "Heading" },
+        { "type": "text", "id": "subtext", "label": "Subtext / Caption" },
+        { "type": "text", "id": "button_label", "label": "Button label" },
+        { "type": "url", "id": "button_link", "label": "Button link" }
+      ]
+    }
+  ],
+  "max_blocks": 10,
+  "presets": [{ "name": "Custom Hero Slider" }]
+}
+{% endschema %}
